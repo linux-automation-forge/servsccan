@@ -1,0 +1,79 @@
+# =============================================================================
+#  servscan.sh — System Requirements
+#  =============================================================================
+#  This is NOT a Python project — servscan.sh is a Bash script. This file
+#  documents the system-level binaries (native Linux packages) the script
+#  depends on, organized by criticality and diagnostic layer.
+#
+#  Install everything at once (Debian/Ubuntu):
+#    sudo apt install bash coreutils util-linux grep gawk gzip tar iproute2 \
+#                     procps-ng sysstat tcpdump systemd
+#
+#  Install everything at once (RHEL/Fedora/CentOS):
+#    sudo dnf install bash coreutils util-linux grep gawk gzip tar iproute \
+#                     procps-ng sysstat tcpdump systemd
+#
+#  Install everything at once (Arch Linux):
+#    sudo pacman -S bash coreutils util-linux grep gawk gzip tar iproute2 \
+#                   procps-ng sysstat tcpdump systemd
+#
+#  Install everything at once (Alpine Linux):
+#    sudo apk add bash coreutils util-linux grep gawk gzip tar iproute2 \
+#                   procps sysstat tcpdump
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+#  MANDATORY — the script will not start without these
+#  (preflight exits 127 if any are missing)
+# -----------------------------------------------------------------------------
+
+bash >= 4.0            # Bash shell (uses ${var:offset:length}, arrays)
+coreutils              # timeout, df, du, head, tail, sha256sum, etc.
+util-linux             # flock (thread-safe status ledger)
+grep                   # pattern matching (log triage, dependency probes)
+gawk  |  awk           # field extraction (interface detection, disk free)
+gzip                   # payload compression (gzip -9)
+tar                    # archive creation (tar -cf - | gzip -9)
+iproute2               # ip command (interface & link stats)
+
+# -----------------------------------------------------------------------------
+#  OPTIONAL — degrade to [ SKIPPED ] if absent; the run continues
+# -----------------------------------------------------------------------------
+
+# --- Layer A: Compute & Memory ------------------------------------------------
+procps-ng              # uptime, vmstat, free, ps
+util-linux             # lscpu (sometimes bundled; on some distros: hwloc)
+
+# --- Layer B: Storage & I/O ---------------------------------------------------
+sysstat                # iostat, mpstat (extended disk I/O metrics)
+util-linux             # findmnt (mount state verification)
+
+# --- Layer C: Network ---------------------------------------------------------
+iproute2               # ss (socket inspection; usually bundled with `ip`)
+tcpdump                # raw packet capture (network_snapshot.pcap)
+
+# --- Layer D: Kernel Logs -----------------------------------------------------
+systemd                # journalctl (priority-filtered log extraction)
+util-linux             # dmesg (kernel ring buffer; also in busybox)
+
+# -----------------------------------------------------------------------------
+#  NOTES
+# -----------------------------------------------------------------------------
+#  * On minimal/container images (Alpine, distroless), many of the "optional"
+#    tools are absent by design — servscan.sh will report [ SKIPPED ] for them
+#    and continue. The mandatory set is intentionally minimal.
+#
+#  * `timeout` must support the `--signal=TERM` flag (GNU coreutils does).
+#    On macOS, install `coreutils` via Homebrew and use `gtimeout` — but note
+#    servscan.sh targets Linux servers.
+#
+#  * `flock` must be from util-linux (supports `flock <fd>` syntax).
+#
+#  * `tcpdump` requires CAP_NET_RAW or root. servscan.sh enforces root
+#    preflight, so this is satisfied automatically when run with sudo.
+#
+#  * `journalctl` requires systemd as PID 1. On non-systemd systems
+#    (Void, Alpine, Devuan), this tool is [ SKIPPED ] — the script falls
+#    back to the /var/log syslog/auth.log regex triage for log coverage.
+# =============================================================================
